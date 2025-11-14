@@ -1,1 +1,2 @@
-include requirements.txt
+# Manifest file for package distribution
+# Modern Python packages use pyproject.toml for dependencies
