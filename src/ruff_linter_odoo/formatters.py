@@ -121,8 +121,6 @@ def get_formatter(format_name: str) -> Formatter:
 
     formatter_class = formatters.get(format_name.lower())
     if formatter_class is None:
-        raise ValueError(
-            f"Unknown format: {format_name}. Available formats: {', '.join(formatters.keys())}"
-        )
+        raise ValueError(f"Unknown format: {format_name}. Available formats: {', '.join(formatters.keys())}")
 
     return formatter_class()

@@ -52,6 +52,31 @@ where = ["src"]
 line-length = 119
 target-version = ["py38"]
 
+[tool.ruff]
+line-length = 119
+target-version = "py38"
+exclude = [
+    ".git",
+    ".tox",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "*.egg-info",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "PIE", "RET", "SIM"]
+ignore = [
+    "N802",    # Allow uppercase function names (required for AST visitor pattern: visit_Call, visit_Module, etc.)
+    "SIM102",  # Allow nested if statements (often more readable than combining with and)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
 [tool.ruff-linter-odoo]
 # Configuration for ruff-linter-odoo
 # Valid Odoo versions to check against (comma-separated)

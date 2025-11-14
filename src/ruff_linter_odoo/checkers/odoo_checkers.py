@@ -2,7 +2,6 @@
 
 import ast
 import re
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 from ..diagnostic import DiagnosticLevel
@@ -95,7 +94,8 @@ class ImportChecker(BaseChecker):
                     if self._is_same_module(module_name):
                         self.add_diagnostic(
                             "OCA004",
-                            f'Same Odoo module absolute import. You should use relative import with "." instead of "odoo.addons.{module_name}"',
+                            f'Same Odoo module absolute import. You should use relative import with "." '
+                            f'instead of "odoo.addons.{module_name}"',
                             node,
                             DiagnosticLevel.WARNING,
                         )
@@ -106,7 +106,8 @@ class ImportChecker(BaseChecker):
                     if alias.name == "Warning":
                         self.add_diagnostic(
                             "OCA005",
-                            "`odoo.exceptions.Warning` is a deprecated alias to `odoo.exceptions.UserError` use `from odoo.exceptions import UserError`",
+                            "`odoo.exceptions.Warning` is a deprecated alias to `odoo.exceptions.UserError` "
+                            "use `from odoo.exceptions import UserError`",
                             node,
                             DiagnosticLevel.REFACTOR,
                         )
@@ -147,9 +148,9 @@ class MethodChecker(BaseChecker):
         """Extract decorator name."""
         if isinstance(decorator, ast.Name):
             return decorator.id
-        elif isinstance(decorator, ast.Attribute):
+        if isinstance(decorator, ast.Attribute):
             return f"{self._get_name(decorator.value)}.{decorator.attr}"
-        elif isinstance(decorator, ast.Call):
+        if isinstance(decorator, ast.Call):
             if isinstance(decorator.func, ast.Attribute):
                 return f"{self._get_name(decorator.func.value)}.{decorator.func.attr}"
         return None
@@ -258,11 +259,11 @@ class ManifestChecker(BaseChecker):
         """Get constant value from AST node."""
         if isinstance(node, ast.Constant):
             return node.value
-        elif isinstance(node, ast.List):
+        if isinstance(node, ast.List):
             return [self._get_constant_value(elt) for elt in node.elts]
-        elif isinstance(node, ast.Dict):
+        if isinstance(node, ast.Dict):
             return self._dict_to_python(node)
-        elif isinstance(node, ast.Str):  # Python 3.7 compatibility
+        if isinstance(node, ast.Str):  # Python 3.7 compatibility
             return node.s
         return None
 
@@ -295,7 +296,10 @@ class ManifestChecker(BaseChecker):
         version = manifest.get("version")
         if version:
             # Odoo version format: X.0.Y.Z.W
-            pattern = r"^(4\.2|5\.0|6\.0|6\.1|7\.0|8\.0|9\.0|10\.0|11\.0|12\.0|13\.0|14\.0|15\.0|16\.0|17\.0|18\.0|19\.0)\.\d+\.\d+\.\d+$"
+            pattern = (
+                r"^(4\.2|5\.0|6\.0|6\.1|7\.0|8\.0|9\.0|10\.0|11\.0|12\.0|13\.0|14\.0|"
+                r"15\.0|16\.0|17\.0|18\.0|19\.0)\.\d+\.\d+\.\d+$"
+            )
             if not re.match(pattern, str(version)):
                 self.add_diagnostic(
                     "OCA011",
@@ -322,9 +326,10 @@ class ManifestChecker(BaseChecker):
         if author:
             for required_author in self.config.manifest_required_authors:
                 if required_author not in author:
+                    authors_list = ", ".join(self.config.manifest_required_authors)
                     self.add_diagnostic(
                         "OCA013",
-                        f"One of the following authors must be present in manifest: {', '.join(self.config.manifest_required_authors)}",
+                        f"One of the following authors must be present in manifest: {authors_list}",
                         node,
                         DiagnosticLevel.CONVENTION,
                     )
@@ -334,9 +339,10 @@ class ManifestChecker(BaseChecker):
         """Check development_status field."""
         dev_status = manifest.get("development_status")
         if dev_status and dev_status not in self.config.development_status_allowed:
+            allowed_statuses = ", ".join(self.config.development_status_allowed)
             self.add_diagnostic(
                 "OCA014",
-                f'Manifest key development_status "{dev_status}" not allowed. Use one of: {", ".join(self.config.development_status_allowed)}.',
+                f'Manifest key development_status "{dev_status}" not allowed. Use one of: {allowed_statuses}.',
                 node,
                 DiagnosticLevel.CONVENTION,
             )

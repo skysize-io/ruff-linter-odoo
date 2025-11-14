@@ -20,9 +20,9 @@ class Linter:
     def lint_file(self, filepath: Path) -> List[Diagnostic]:
         """Lint a single Python file."""
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 source_code = f.read()
-        except (OSError, UnicodeDecodeError) as e:
+        except (OSError, UnicodeDecodeError):
             return []
 
         try:
@@ -44,10 +44,7 @@ class Linter:
         """Lint all Python files in a directory."""
         all_diagnostics = []
 
-        if recursive:
-            pattern = "**/*.py"
-        else:
-            pattern = "*.py"
+        pattern = "**/*.py" if recursive else "*.py"
 
         for filepath in directory.glob(pattern):
             # Check if file should be excluded
@@ -63,15 +60,11 @@ class Linter:
         """Lint a file or directory."""
         if path.is_file():
             return self.lint_file(path)
-        elif path.is_dir():
+        if path.is_dir():
             return self.lint_directory(path)
-        else:
-            return []
+        return []
 
     def _should_exclude(self, filepath: Path) -> bool:
         """Check if a file should be excluded based on configuration."""
         path_str = str(filepath)
-        for pattern in self.config.exclude:
-            if pattern in path_str:
-                return True
-        return False
+        return any(pattern in path_str for pattern in self.config.exclude)

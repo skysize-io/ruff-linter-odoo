@@ -1,0 +1,33 @@
+name: Tests
+
+on: [pull_request, push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-cov
+
+      - name: Run tests with unittest
+        run: |
+          python -m unittest discover -s tests -v
+
+      - name: Run tests with pytest (if available)
+        run: |
+          pytest tests/ -v --cov=ruff_linter_odoo --cov-report=term-missing
+        continue-on-error: true

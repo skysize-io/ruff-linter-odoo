@@ -3,7 +3,7 @@
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -16,9 +16,7 @@ class Config:
     """Configuration for ruff-linter-odoo."""
 
     # Odoo version settings
-    valid_odoo_versions: List[str] = field(
-        default_factory=lambda: ["14.0", "15.0", "16.0", "17.0", "18.0"]
-    )
+    valid_odoo_versions: List[str] = field(default_factory=lambda: ["14.0", "15.0", "16.0", "17.0", "18.0"])
 
     # Output settings
     output_format: str = "text"  # text, json, sarif, github
@@ -28,9 +26,7 @@ class Config:
     disable: List[str] = field(default_factory=list)
 
     # Manifest checks
-    manifest_required_authors: List[str] = field(
-        default_factory=lambda: ["Odoo Community Association (OCA)"]
-    )
+    manifest_required_authors: List[str] = field(default_factory=lambda: ["Odoo Community Association (OCA)"])
     license_allowed: List[str] = field(
         default_factory=lambda: [
             "AGPL-3",
@@ -77,9 +73,7 @@ class Config:
         default = cls()
 
         return cls(
-            valid_odoo_versions=tool_config.get(
-                "valid-odoo-versions", default.valid_odoo_versions
-            ),
+            valid_odoo_versions=tool_config.get("valid-odoo-versions", default.valid_odoo_versions),
             output_format=tool_config.get("output-format", "text"),
             enable=tool_config.get("enable", []),
             disable=tool_config.get("disable", []),
@@ -121,6 +115,4 @@ class Config:
         """Check if a specific check is enabled."""
         if self.enable and check_code not in self.enable:
             return False
-        if check_code in self.disable:
-            return False
-        return True
+        return check_code not in self.disable

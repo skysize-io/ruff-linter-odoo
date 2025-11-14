@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import os
 import unittest
-from collections import Counter
-from glob import glob
 from pathlib import Path
 
 from ruff_linter_odoo import Linter
@@ -22,11 +19,7 @@ class MainTest(unittest.TestCase):
         self.paths_modules = list(self.root_path_modules.rglob("*.py"))
 
         self.odoo_namespace_addons_path = (
-            Path(__file__).parent.parent
-            / "testing"
-            / "resources"
-            / "test_repo_odoo_namespace"
-            / "odoo"
+            Path(__file__).parent.parent / "testing" / "resources" / "test_repo_odoo_namespace" / "odoo"
         )
 
         self.maxDiff = None
@@ -169,10 +162,16 @@ class MainTest(unittest.TestCase):
         diagnostics = self.run_linter(manifest_files)
 
         # Should have some manifest-related diagnostics
-        manifest_codes = {d.code for d in diagnostics if d.code.startswith("OCA009") or
-                         d.code.startswith("OCA010") or d.code.startswith("OCA011") or
-                         d.code.startswith("OCA012") or d.code.startswith("OCA013") or
-                         d.code.startswith("OCA014")}
+        manifest_codes = {
+            d.code
+            for d in diagnostics
+            if d.code.startswith("OCA009")
+            or d.code.startswith("OCA010")
+            or d.code.startswith("OCA011")
+            or d.code.startswith("OCA012")
+            or d.code.startswith("OCA013")
+            or d.code.startswith("OCA014")
+        }
 
         # Print manifest diagnostics for debugging
         if manifest_codes:
@@ -281,7 +280,7 @@ def foo():
     print("Debug message")
 """
 
-        with NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(code_with_print)
             f.flush()
             temp_path = Path(f.name)
@@ -306,7 +305,7 @@ def bad_method(self):
     self.env.cr.commit()
 """
 
-        with NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(code_with_commit)
             f.flush()
             temp_path = Path(f.name)
@@ -335,7 +334,7 @@ def bad_query(self, table_name):
     cr.execute("SELECT * FROM table WHERE id = %s" % self.id)
 """
 
-        with NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(code_with_sqli)
             f.flush()
             temp_path = Path(f.name)
