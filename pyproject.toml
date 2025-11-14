@@ -1,6 +1,89 @@
-[tool.black]
-line-length=119
-
 [build-system]
-requires = ["setuptools >=42"]
+requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "ruff-linter-odoo"
+version = "1.0.0"
+description = "A modern, standalone linting tool for Odoo modules with Ruff-compatible output"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "AGPL-3.0"}
+authors = [
+    {name = "Odoo Community Association (OCA)"}
+]
+keywords = ["odoo", "linter", "ruff", "static-analysis", "code-quality"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "tomli>=2.0.0; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=3.0.0",
+    "black>=22.0.0",
+]
+
+[project.scripts]
+ruff-linter-odoo = "ruff_linter_odoo.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/OCA/ruff-linter-odoo"
+"Bug Tracker" = "https://github.com/OCA/ruff-linter-odoo/issues"
+Documentation = "https://github.com/OCA/ruff-linter-odoo#readme"
+"Source Code" = "https://github.com/OCA/ruff-linter-odoo"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 119
+target-version = ["py38"]
+
+[tool.ruff-linter-odoo]
+# Configuration for ruff-linter-odoo
+# Valid Odoo versions to check against (comma-separated)
+valid-odoo-versions = ["14.0", "15.0", "16.0", "17.0", "18.0"]
+
+# Output format: text, json, sarif, github
+output-format = "text"
+
+# Enable/disable specific checks
+enable = []  # Empty means all checks enabled
+disable = []
+
+# Manifest checks
+manifest-required-authors = ["Odoo Community Association (OCA)"]
+license-allowed = [
+    "AGPL-3",
+    "LGPL-3",
+    "GPL-2",
+    "GPL-2 or any later version",
+    "GPL-3",
+    "GPL-3 or any later version",
+]
+development-status-allowed = ["Alpha", "Beta", "Production/Stable", "Mature"]
+
+# Path patterns to exclude
+exclude = [
+    ".git",
+    ".tox",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "*.egg-info",
+    "build",
+    "dist",
+]
