@@ -64,6 +64,7 @@ exclude = [
     "*.egg-info",
     "build",
     "dist",
+    "testing/resources",
 ]
 
 [tool.ruff.lint]
