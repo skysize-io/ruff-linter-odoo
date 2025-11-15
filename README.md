@@ -2,7 +2,7 @@
 
 A modern, standalone linting tool for Odoo modules with Ruff-compatible output.
 
-[![Build Status](https://github.com/OCA/ruff-linter-odoo/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/OCA/ruff-linter-odoo/actions/workflows/test.yml?query=branch%3Amain)
+[![Build Status](https://github.com/skysize-io/ruff-linter-odoo/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/skysize-io/ruff-linter-odoo/actions/workflows/test.yml?query=branch%3Amain)
 [![version](https://img.shields.io/pypi/v/ruff-linter-odoo.svg)](https://pypi.org/project/ruff-linter-odoo)
 [![supported-versions](https://img.shields.io/pypi/pyversions/ruff-linter-odoo.svg)](https://pypi.org/project/ruff-linter-odoo)
 
@@ -239,6 +239,6 @@ This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE)
 
 ## Credits
 
-This project is maintained by the [Odoo Community Association (OCA)](http://odoo-community.org/).
+This project is maintained by the [skysize.io](https://www.skysize.io/).
 
 Based on the excellent work of [pylint-odoo](https://github.com/OCA/pylint-odoo), modernized for the Ruff era.
