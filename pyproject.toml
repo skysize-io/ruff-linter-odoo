@@ -4,21 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ruff-linter-odoo"
-version = "1.0.0"
+version = "0.5.0"
 description = "A modern, standalone linting tool for Odoo modules with Ruff-compatible output"
 readme = "README.md"
-requires-python = ">=3.8"
-license = {text = "AGPL-3.0"}
+requires-python = ">=3.9"
+license = {text = "AGPL-3.0-or-later"}
 authors = [
-    {name = "Odoo Community Association (OCA)"}
+    {name = "Skysize", email = "baa@skysize.io"}
 ]
 keywords = ["odoo", "linter", "ruff", "static-analysis", "code-quality"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -40,21 +39,21 @@ dev = [
 ruff-linter-odoo = "ruff_linter_odoo.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/OCA/ruff-linter-odoo"
-"Bug Tracker" = "https://github.com/OCA/ruff-linter-odoo/issues"
-Documentation = "https://github.com/OCA/ruff-linter-odoo#readme"
-"Source Code" = "https://github.com/OCA/ruff-linter-odoo"
+Homepage = "https://github.com/skysize-io/ruff-linter-odoo"
+"Bug Tracker" = "https://github.com/skysize-io/ruff-linter-odoo/issues"
+Documentation = "https://github.com/skysize-io/ruff-linter-odoo#readme"
+"Source Code" = "https://github.com/skysize-io/ruff-linter-odoo"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.black]
 line-length = 119
-target-version = ["py38"]
+target-version = ["py39"]
 
 [tool.ruff]
 line-length = 119
-target-version = "py38"
+target-version = "py39"
 exclude = [
     ".git",
     ".tox",
@@ -79,30 +78,13 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.ruff-linter-odoo]
-# Configuration for ruff-linter-odoo
-# Valid Odoo versions to check against (comma-separated)
-valid-odoo-versions = ["14.0", "15.0", "16.0", "17.0", "18.0"]
+# Configuration for running ruff-linter-odoo on this repository itself.
+# All keys are optional; see the README for the full list and defaults.
 
 # Output format: text, json, sarif, github
 output-format = "text"
 
-# Enable/disable specific checks
-enable = []  # Empty means all checks enabled
-disable = []
-
-# Manifest checks
-manifest-required-authors = ["Odoo Community Association (OCA)"]
-license-allowed = [
-    "AGPL-3",
-    "LGPL-3",
-    "GPL-2",
-    "GPL-2 or any later version",
-    "GPL-3",
-    "GPL-3 or any later version",
-]
-development-status-allowed = ["Alpha", "Beta", "Production/Stable", "Mature"]
-
-# Path patterns to exclude
+# Path patterns to exclude (test fixtures are linted by the test suite only)
 exclude = [
     ".git",
     ".tox",
@@ -112,4 +94,5 @@ exclude = [
     "*.egg-info",
     "build",
     "dist",
+    "testing/resources",
 ]

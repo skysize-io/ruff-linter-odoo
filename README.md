@@ -25,7 +25,7 @@ pip install ruff-linter-odoo
 Or install from source:
 
 ```bash
-git clone https://github.com/OCA/ruff-linter-odoo.git
+git clone https://github.com/skysize-io/ruff-linter-odoo.git
 cd ruff-linter-odoo
 pip install -e .
 ```
@@ -88,8 +88,9 @@ Configuration is done via `pyproject.toml`:
 
 ```toml
 [tool.ruff-linter-odoo]
-# Valid Odoo versions to check against
-valid-odoo-versions = ["14.0", "15.0", "16.0", "17.0", "18.0"]
+# Valid Odoo versions to check against (used by manifest-version-format and
+# to enable version-dependent checks). Defaults to all versions 4.2 - 19.0.
+valid-odoo-versions = ["16.0", "17.0", "18.0", "19.0"]
 
 # Output format: text, json, sarif, github
 output-format = "text"
@@ -99,7 +100,10 @@ enable = []  # Empty means all checks enabled
 disable = ["OCA001"]  # Disable specific checks
 
 # Manifest checks
-manifest-required-authors = ["Odoo Community Association (OCA)"]
+manifest-required-keys = ["name", "version", "author", "license"]
+manifest-deprecated-keys = ["description"]
+manifest-required-authors = []  # e.g. ["My Company"] to enforce an author
+readme-template-url = "https://github.com/OCA/maintainer-tools/blob/master/template/module/README.rst"
 license-allowed = [
     "AGPL-3",
     "LGPL-3",
@@ -107,8 +111,14 @@ license-allowed = [
     "GPL-2 or any later version",
     "GPL-3",
     "GPL-3 or any later version",
+    "OEEL-1",
+    "Other OSI approved licence",
+    "Other proprietary",
 ]
 development-status-allowed = ["Alpha", "Beta", "Production/Stable", "Mature"]
+
+# Exception classes whose string arguments must be translated (OCA023)
+odoo-exceptions = ["UserError", "ValidationError", "AccessError", "Warning"]
 
 # Path patterns to exclude
 exclude = [
@@ -125,22 +135,66 @@ exclude = [
 
 ## Available Checks
 
-| Code | Description | Level |
-|------|-------------|-------|
-| OCA001 | Print used. Use `logger` instead. | Warning |
-| OCA002 | Use of cr.commit() directly | Error |
-| OCA003 | SQL injection risk. Use parameters | Error |
-| OCA004 | Same Odoo module absolute import. Use relative import | Warning |
-| OCA005 | `odoo.exceptions.Warning` is deprecated | Refactor |
-| OCA006 | Name of compute method should start with "_compute_" | Convention |
-| OCA007 | Missing `super` call in method | Warning |
-| OCA008 | Use lazy % or .format() in odoo._ functions | Warning |
-| OCA009 | Missing required key in manifest file | Convention |
-| OCA010 | License not allowed in manifest file | Convention |
-| OCA011 | Wrong Version Format in manifest file | Convention |
-| OCA012 | The author key must be a string | Error |
-| OCA013 | Required author missing in manifest | Convention |
-| OCA014 | Invalid development_status in manifest | Convention |
+Codes are sequential (`OCA001`, `OCA002`, ...) and intentionally do **not** mirror
+upstream pylint-odoo message ids: upstream ids are only unique together with their
+letter prefix (`C8101` and `E8101` are different rules), so a plain numeric mapping
+would be ambiguous. If you are migrating from pylint-odoo, use the "pylint-odoo"
+column below to find the new code.
+
+| Code | pylint-odoo | Description | Level |
+|------|-------------|-------------|-------|
+| OCA001 | print-used (W8116) | Print used. Use `logger` instead. | Warning |
+| OCA002 | invalid-commit (E8102) | Use of cr.commit() directly | Error |
+| OCA003 | sql-injection (E8103) | SQL injection risk. Use parameters | Error |
+| OCA004 | odoo-addons-relative-import (W8150) | Same Odoo module absolute import. Use relative import | Warning |
+| OCA005 | odoo-exception-warning (R8101) | `odoo.exceptions.Warning` is deprecated | Refactor |
+| OCA006 | method-compute (C8108) | Name of compute method should start with "_compute_" | Convention |
+| OCA007 | method-required-super (W8106) | Missing `super` call in method | Warning |
+| OCA008 | translation-not-lazy (W8301) | % interpolation instead of `_()` arguments | Warning |
+| OCA009 | manifest-required-key (C8102) | Missing required key in manifest file | Convention |
+| OCA010 | license-allowed (C8105) | License not allowed in manifest file | Convention |
+| OCA011 | manifest-version-format (C8106) | Wrong Version Format in manifest file | Convention |
+| OCA012 | manifest-author-string (E8101) | The author key must be a string | Error |
+| OCA013 | manifest-required-author (C8101) | Required author missing in manifest | Convention |
+| OCA014 | development-status-allowed (C8111) | Invalid development_status in manifest | Convention |
+| OCA015 | manifest-deprecated-key (C8103) | Deprecated key in manifest file | Convention |
+| OCA016 | manifest-maintainers-list (E8104) | maintainers key must be a list of strings | Error |
+| OCA017 | manifest-data-duplicated (W8125) | Data file duplicated in manifest | Warning |
+| OCA018 | manifest-behind-migrations (E8145) | Manifest version lower than migration scripts | Error |
+| OCA019 | manifest-external-assets (W8162) | Asset loaded from an external URL | Warning |
+| OCA020 | missing-readme (C8112) | Missing README file next to the manifest | Convention |
+| OCA021 | website-manifest-key-not-valid-uri (W8114) | website key is not a valid URI | Warning |
+| OCA022 | resource-not-exist (F8101) | Manifest data file does not exist | Error |
+| OCA023 | translation-required (C8107) | String parameter requires translation | Convention |
+| OCA024 | translation-contains-variable (W8115) | Translatable term contains variables | Warning |
+| OCA025 | translation-positional-used (W8120) | Multiple positional placeholders in translation | Warning |
+| OCA026 | translation-field (W8103) | `_()` in field definitions is not necessary | Warning |
+| OCA027 | translation-format-interpolation (W8302) | str.format() used with `_()` | Warning |
+| OCA028 | translation-fstring-interpolation (W8303) | f-string used inside `_()` | Warning |
+| OCA029 | translation-format-truncated (E8301) | Translation format string ends mid-specifier | Error |
+| OCA030 | translation-too-few-args (E8306) | Not enough arguments for format string | Error |
+| OCA031 | translation-too-many-args (E8305) | Too many arguments for format string | Error |
+| OCA032 | translation-unsupported-format (E8300) | Unsupported format character | Error |
+| OCA033 | prefer-env-translation (W8161) | Prefer `self.env._` (Odoo >= 18) | Warning |
+| OCA034 | method-inverse (C8110) | Name of inverse method should start with "_inverse_" | Convention |
+| OCA035 | method-search (C8109) | Name of search method should start with "_search_" | Convention |
+
+Unlike upstream, the translation checks (OCA008, OCA027–OCA032) also cover
+`_lt()` calls — a lazily-translated string has the same bugs.
+
+`ruff-linter-odoo` only implements Odoo-specific rules. Upstream pylint-odoo also
+relied on pylint built-ins for generic checks (eval-used, unused imports, ...);
+those are Ruff's job — run `ruff check` alongside this tool (see below).
+
+### Inline suppression
+
+Ruff-style `# noqa` comments are supported:
+
+```python
+print("debugging")          # noqa           <- suppresses everything on this line
+print("debugging")          # noqa: OCA001   <- suppresses only OCA001
+cr.commit()                 # noqa: OCA001, OCA002
+```
 
 ## Pre-commit Hook
 
@@ -148,8 +202,8 @@ Add to your `.pre-commit-config.yaml`:
 
 ```yaml
 repos:
-  - repo: https://github.com/OCA/ruff-linter-odoo
-    rev: v1.0.0
+  - repo: https://github.com/skysize-io/ruff-linter-odoo
+    rev: v0.5.0
     hooks:
       - id: ruff-linter-odoo
         args: [check, .]
@@ -231,11 +285,14 @@ python -m build
 
 ## Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions are welcome! Please open an issue or pull request on [GitHub](https://github.com/skysize-io/ruff-linter-odoo).
 
 ## License
 
-This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the AGPL-3.0-or-later License - see the [LICENSE](LICENSE) file for details.
+
+Large parts of the checker logic are derived from [pylint-odoo](https://github.com/OCA/pylint-odoo),
+copyright the Odoo Community Association (OCA), also licensed AGPLv3+.
 
 ## Credits
 

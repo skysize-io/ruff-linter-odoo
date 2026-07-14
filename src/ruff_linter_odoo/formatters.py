@@ -1,15 +1,15 @@
 """Output formatters for ruff-linter-odoo."""
 
 import json
-from typing import List
 
+from . import __version__
 from .diagnostic import Diagnostic
 
 
 class Formatter:
     """Base class for output formatters."""
 
-    def format(self, diagnostics: List[Diagnostic]) -> str:
+    def format(self, diagnostics: list[Diagnostic]) -> str:
         """Format diagnostics for output."""
         raise NotImplementedError
 
@@ -17,7 +17,7 @@ class Formatter:
 class TextFormatter(Formatter):
     """Ruff-compatible text formatter."""
 
-    def format(self, diagnostics: List[Diagnostic]) -> str:
+    def format(self, diagnostics: list[Diagnostic]) -> str:
         """Format diagnostics as text (similar to Ruff's default output)."""
         if not diagnostics:
             return ""
@@ -37,7 +37,7 @@ class TextFormatter(Formatter):
 class JSONFormatter(Formatter):
     """JSON output formatter compatible with Ruff."""
 
-    def format(self, diagnostics: List[Diagnostic]) -> str:
+    def format(self, diagnostics: list[Diagnostic]) -> str:
         """Format diagnostics as JSON."""
         output = [diag.to_dict() for diag in diagnostics]
         return json.dumps(output, indent=2)
@@ -46,7 +46,7 @@ class JSONFormatter(Formatter):
 class SARIFFormatter(Formatter):
     """SARIF format output for integration with IDEs and CI/CD."""
 
-    def format(self, diagnostics: List[Diagnostic]) -> str:
+    def format(self, diagnostics: list[Diagnostic]) -> str:
         """Format diagnostics as SARIF."""
         sarif = {
             "version": "2.1.0",
@@ -56,8 +56,8 @@ class SARIFFormatter(Formatter):
                     "tool": {
                         "driver": {
                             "name": "ruff-linter-odoo",
-                            "version": "1.0.0",
-                            "informationUri": "https://github.com/OCA/ruff-linter-odoo",
+                            "version": __version__,
+                            "informationUri": "https://github.com/skysize-io/ruff-linter-odoo",
                         }
                     },
                     "results": [self._to_sarif_result(diag) for diag in diagnostics],
@@ -99,7 +99,7 @@ class SARIFFormatter(Formatter):
 class GitHubFormatter(Formatter):
     """GitHub Actions annotation format."""
 
-    def format(self, diagnostics: List[Diagnostic]) -> str:
+    def format(self, diagnostics: list[Diagnostic]) -> str:
         """Format diagnostics as GitHub Actions annotations."""
         lines = []
         for diag in diagnostics:

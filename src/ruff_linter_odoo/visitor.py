@@ -1,7 +1,6 @@
 """AST visitor base classes and checker registry."""
 
 import ast
-from typing import List
 
 from .config import Config
 from .diagnostic import Diagnostic, DiagnosticLevel
@@ -15,7 +14,7 @@ class BaseChecker(ast.NodeVisitor):
         self.config = config
         self.filename = filename
         self.source_code = source_code
-        self.diagnostics: List[Diagnostic] = []
+        self.diagnostics: list[Diagnostic] = []
         self.source_lines = source_code.splitlines()
 
     def add_diagnostic(
@@ -42,7 +41,7 @@ class BaseChecker(ast.NodeVisitor):
         self.diagnostics.append(diagnostic)
 
 
-def get_all_checkers(config: Config, filename: str, source_code: str) -> List[BaseChecker]:
+def get_all_checkers(config: Config, filename: str, source_code: str) -> list[BaseChecker]:
     """Get all registered checkers."""
     from .checkers.odoo_checkers import (
         CommitChecker,
