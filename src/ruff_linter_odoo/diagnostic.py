@@ -19,7 +19,7 @@ class DiagnosticLevel(Enum):
 class Diagnostic:
     """Represents a linting diagnostic/violation."""
 
-    code: str  # e.g., "OCA001"
+    code: str  # e.g., "ODO001"
     message: str
     filename: str
     line: int

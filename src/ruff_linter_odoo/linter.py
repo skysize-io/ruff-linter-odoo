@@ -11,7 +11,7 @@ from .config import Config
 from .diagnostic import Diagnostic
 from .visitor import get_all_checkers
 
-#: Ruff-style inline suppression: `# noqa` or `# noqa: OCA001, OCA002`
+#: Ruff-style inline suppression: `# noqa` or `# noqa: ODO001, ODO002`
 NOQA_RE = re.compile(r"#\s*noqa(?::\s*(?P<codes>[A-Z][A-Z0-9]*(?:[,\s]+[A-Z][A-Z0-9]*)*))?", re.IGNORECASE)
 
 

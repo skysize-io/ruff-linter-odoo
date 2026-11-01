@@ -14,50 +14,50 @@ from ruff_linter_odoo.config import Config
 # Where the count differs from upstream pylint-odoo's reference run
 # (commit 0a98430, tests/test_main.py EXPECTED_ERRORS) the reason is noted.
 # The known, intentional divergences are:
-#   * OCA008/027/028/029/030/031/032 also cover `_lt()` calls. Upstream skips
+#   * ODO008/027/028/029/030/031/032 also cover `_lt()` calls. Upstream skips
 #     `_lt` because its checks are derived from pylint's logging checker,
 #     which only recognizes `_` — a lazily-translated string has the same
 #     bugs, so we check it too.
-#   * OCA009 requires name/version/author/license by default (upstream only
-#     requires license). Configurable via `manifest-required-keys`.
-#   * OCA013 requires no particular author by default (upstream requires the
-#     OCA). Opt-in via `manifest-required-authors`.
+#   * The rules follow the Odoo guidelines, not the OCA ones. ODO009 only
+#     requires `name` (upstream requires license), ODO011 also accepts a
+#     version without the series prefix ("1.0"), and ODO018 compares versions
+#     after prefixing the series like Odoo does. The OCA-only rules are gone:
+#     W8150 relative import, C8101 required author, C8111 development_status,
+#     C8103 deprecated description, E8104 maintainers, C8112 missing README.
+#   * ODO036-ODO038 are Odoo-guideline rules with no upstream equivalent.
 EXPECTED_DIAGNOSTICS = {
-    "OCA001": 1,  # print-used (upstream W8116: 1)
-    "OCA002": 4,  # invalid-commit (upstream E8102: 4)
-    "OCA003": 21,  # sql-injection (upstream E8103: 21)
-    "OCA004": 4,  # odoo-addons-relative-import (upstream W8150: 4)
-    "OCA005": 4,  # odoo-exception-warning (upstream R8101: 4)
-    "OCA006": 2,  # method-compute (upstream C8108: 2)
-    "OCA007": 8,  # method-required-super (upstream W8106: 8)
-    "OCA008": 63,  # translation-not-lazy (upstream W8301: 42 — we also check _lt)
-    "OCA009": 7,  # manifest-required-key (upstream C8102: 1 — we require 4 keys by default)
-    "OCA010": 1,  # license-allowed (upstream C8105: 1)
-    "OCA011": 3,  # manifest-version-format (upstream C8106: 3)
-    "OCA012": 1,  # manifest-author-string (upstream E8101: 1)
-    "OCA013": 0,  # manifest-required-author (upstream C8101: 1 — no required author by default)
-    "OCA014": 1,  # development-status-allowed (upstream C8111: 1)
-    "OCA015": 1,  # manifest-deprecated-key (upstream C8103: 1)
-    "OCA016": 1,  # manifest-maintainers-list (upstream E8104: 1)
-    "OCA017": 1,  # manifest-data-duplicated (upstream W8125: 1)
-    "OCA018": 3,  # manifest-behind-migrations (upstream E8145: 3)
-    "OCA019": 3,  # manifest-external-assets (upstream W8162: 3)
-    "OCA020": 1,  # missing-readme (upstream C8112: 1)
-    "OCA021": 2,  # website-manifest-key-not-valid-uri (upstream W8114: 2)
-    "OCA022": 4,  # resource-not-exist (upstream F8101: 4)
-    "OCA023": 16,  # translation-required (upstream C8107: 16)
-    "OCA024": 33,  # translation-contains-variable (upstream W8115: 33)
-    "OCA025": 30,  # translation-positional-used (upstream W8120: 30)
-    "OCA026": 3,  # translation-field (upstream W8103: 3)
-    "OCA027": 33,  # translation-format-interpolation (upstream W8302: 22 — we also check _lt)
-    "OCA028": 4,  # translation-fstring-interpolation (upstream W8303: 3 — we also check _lt)
-    "OCA029": 3,  # translation-format-truncated (upstream E8301: 2 — we also check _lt)
-    "OCA030": 3,  # translation-too-few-args (upstream E8306: 2 — we also check _lt)
-    "OCA031": 3,  # translation-too-many-args (upstream E8305: 2 — we also check _lt)
-    "OCA032": 3,  # translation-unsupported-format (upstream E8300: 2 — we also check _lt)
-    "OCA033": 112,  # prefer-env-translation (upstream W8161: 112)
-    "OCA034": 2,  # method-inverse (upstream C8110: 2)
-    "OCA035": 2,  # method-search (upstream C8109: 2)
+    "ODO001": 1,  # print-used (upstream W8116: 1)
+    "ODO002": 4,  # invalid-commit (upstream E8102: 4)
+    "ODO003": 21,  # sql-injection (upstream E8103: 21)
+    "ODO005": 4,  # odoo-exception-warning (upstream R8101: 4)
+    "ODO006": 2,  # method-compute (upstream C8108: 2)
+    "ODO007": 8,  # method-required-super (upstream W8106: 8)
+    "ODO008": 63,  # translation-not-lazy (upstream W8301: 42 — we also check _lt)
+    "ODO009": 2,  # manifest-required-key (upstream C8102: 1, Odoo requires name, not license)
+    "ODO010": 1,  # license-allowed (upstream C8105: 1)
+    "ODO011": 2,  # manifest-version-format (upstream C8106: 3, "1.0" is a valid Odoo version)
+    "ODO012": 1,  # manifest-author-string (upstream E8101: 1)
+    "ODO017": 1,  # manifest-data-duplicated (upstream W8125: 1)
+    "ODO018": 3,  # manifest-behind-migrations (upstream E8145: 3)
+    "ODO019": 3,  # manifest-external-assets (upstream W8162: 3)
+    "ODO021": 2,  # website-manifest-key-not-valid-uri (upstream W8114: 2)
+    "ODO022": 4,  # resource-not-exist (upstream F8101: 4)
+    "ODO023": 16,  # translation-required (upstream C8107: 16)
+    "ODO024": 33,  # translation-contains-variable (upstream W8115: 33)
+    "ODO025": 30,  # translation-positional-used (upstream W8120: 30)
+    "ODO026": 3,  # translation-field (upstream W8103: 3)
+    "ODO027": 33,  # translation-format-interpolation (upstream W8302: 22 — we also check _lt)
+    "ODO028": 4,  # translation-fstring-interpolation (upstream W8303: 3 — we also check _lt)
+    "ODO029": 3,  # translation-format-truncated (upstream E8301: 2 — we also check _lt)
+    "ODO030": 3,  # translation-too-few-args (upstream E8306: 2 — we also check _lt)
+    "ODO031": 3,  # translation-too-many-args (upstream E8305: 2 — we also check _lt)
+    "ODO032": 3,  # translation-unsupported-format (upstream E8300: 2 — we also check _lt)
+    "ODO033": 112,  # prefer-env-translation (upstream W8161: 112)
+    "ODO034": 2,  # method-inverse (upstream C8110: 2)
+    "ODO035": 2,  # method-search (upstream C8109: 2)
+    "ODO036": 3,  # module-level-translation (Odoo guidelines, _() in class-level field definitions)
+    "ODO037": 0,  # route-type-json (Odoo guidelines, no 19.0 routes in the fixtures)
+    "ODO038": 0,  # non-ascii-punctuation (Odoo guidelines, none in the fixtures)
 }
 
 
@@ -245,202 +245,216 @@ class NoqaTest(LintHelperMixin, unittest.TestCase):
     """Tests for ruff-style `# noqa` inline suppression."""
 
     def test_bare_noqa_suppresses_all(self):
-        self.assert_no_code('print("x")  # noqa\n', "OCA001")
+        self.assert_no_code('print("x")  # noqa\n', "ODO001")
 
     def test_noqa_with_matching_code(self):
-        self.assert_no_code('print("x")  # noqa: OCA001\n', "OCA001")
+        self.assert_no_code('print("x")  # noqa: ODO001\n', "ODO001")
 
     def test_noqa_with_multiple_codes(self):
-        self.assert_no_code('print("x")  # noqa: OCA002, OCA001\n', "OCA001")
+        self.assert_no_code('print("x")  # noqa: ODO002, ODO001\n', "ODO001")
 
     def test_noqa_with_other_code_does_not_suppress(self):
-        self.assert_code('print("x")  # noqa: OCA002\n', "OCA001")
+        self.assert_code('print("x")  # noqa: ODO002\n', "ODO001")
 
     def test_noqa_only_affects_its_line(self):
         source = 'print("a")  # noqa\nprint("b")\n'
         diagnostics = self.lint_source(source)
-        self.assertEqual(self.codes(diagnostics), ["OCA001"])
+        self.assertEqual(self.codes(diagnostics), ["ODO001"])
         self.assertEqual(diagnostics[0].line, 2)
 
     def test_noqa_in_string_literal_is_ignored(self):
-        self.assert_code('print("this mentions # noqa in a string")\n', "OCA001")
+        self.assert_code('print("this mentions # noqa in a string")\n', "ODO001")
 
 
 class PythonRulesTest(LintHelperMixin, unittest.TestCase):
     """One focused positive + negative test per Python-code rule."""
 
-    def test_oca001_print_used(self):
-        self.assert_code('print("hello")\n', "OCA001")
-        self.assert_no_code('_logger.info("hello")\n', "OCA001")
+    def test_odo001_print_used(self):
+        self.assert_code('print("hello")\n', "ODO001")
+        self.assert_no_code('_logger.info("hello")\n', "ODO001")
 
-    def test_oca002_invalid_commit(self):
+    def test_odo002_invalid_commit(self):
         for cursor in ("cr", "self._cr", "self.cr", "self.env.cr"):
-            self.assert_code(f"def method(self):\n    {cursor}.commit()\n", "OCA002")
-        self.assert_no_code("def method(self):\n    self.env.cr2.commit()\n", "OCA002")
-        self.assert_no_code("def method(self):\n    self.env.cr.commit2()\n", "OCA002")
+            self.assert_code(f"def method(self):\n    {cursor}.commit()\n", "ODO002")
+        self.assert_no_code("def method(self):\n    self.env.cr2.commit()\n", "ODO002")
+        self.assert_no_code("def method(self):\n    self.env.cr.commit2()\n", "ODO002")
 
-    def test_oca003_sql_injection(self):
+    def test_odo003_sql_injection(self):
         self.assert_code(
             "def q(self, ids):\n    self._cr.execute('SELECT * FROM t WHERE id IN %s' % (tuple(ids),))\n",
-            "OCA003",
+            "ODO003",
         )
         self.assert_code(
             "def q(self, ids):\n    self.cr.execute('SELECT * FROM t WHERE id IN {}'.format(ids))\n",
-            "OCA003",
+            "ODO003",
         )
         self.assert_code(
             "def q(self, table):\n    self.cr.execute(f'SELECT * FROM {table}')\n",
-            "OCA003",
+            "ODO003",
         )
         self.assert_code(
             "def q(self, ids):\n    var = 'SELECT * FROM t WHERE id IN %s'\n    self._cr.execute(var % ids)\n",
-            "OCA003",
+            "ODO003",
         )
         # Parameterized query: fine
         self.assert_no_code(
             "def q(self, ids):\n    self._cr.execute('SELECT * FROM t WHERE id IN %s', (tuple(ids),))\n",
-            "OCA003",
+            "ODO003",
         )
         # Private attribute (self._table): fine
         self.assert_no_code(
             "def q(self, ids):\n    self._cr.execute('DELETE FROM %s WHERE id IN %%s' % self._table, (ids,))\n",
-            "OCA003",
+            "ODO003",
         )
         # psycopg2.sql composition: fine
         self.assert_no_code(
             "from psycopg2 import sql\n"
             "def q(self):\n"
             "    self._cr.execute(sql.SQL('SELECT * FROM {}').format(sql.Identifier(self._table)))\n",
-            "OCA003",
+            "ODO003",
         )
 
-    def test_oca004_odoo_addons_relative_import(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            module_dir = Path(tmpdir) / "my_module"
-            module_dir.mkdir()
-            (module_dir / "__manifest__.py").write_text("{'name': 'x'}\n", encoding="utf-8")
-            model = module_dir / "models.py"
+    def test_odo005_odoo_exception_warning(self):
+        self.assert_code("from odoo.exceptions import Warning\n", "ODO005")
+        self.assert_no_code("from odoo.exceptions import UserError\n", "ODO005")
 
-            model.write_text("from odoo.addons.my_module import helpers\n", encoding="utf-8")
-            self.assertIn("OCA004", self.codes(Linter().lint_file(model)))
+    def test_odo006_method_compute(self):
+        self.assert_code("name = fields.Char(compute='calc_name')\n", "ODO006")
+        self.assert_no_code("name = fields.Char(compute='_compute_name')\n", "ODO006")
 
-            model.write_text("from odoo.addons import my_module\n", encoding="utf-8")
-            self.assertIn("OCA004", self.codes(Linter().lint_file(model)))
+    def test_odo034_method_inverse(self):
+        self.assert_code("name = fields.Char(inverse='set_name')\n", "ODO034")
+        self.assert_no_code("name = fields.Char(inverse='_inverse_name')\n", "ODO034")
 
-            model.write_text("import odoo.addons.my_module.helpers\n", encoding="utf-8")
-            self.assertIn("OCA004", self.codes(Linter().lint_file(model)))
+    def test_odo035_method_search(self):
+        self.assert_code("name = fields.Char(search='find_name')\n", "ODO035")
+        self.assert_no_code("name = fields.Char(search='_search_name')\n", "ODO035")
 
-            # Importing another module is fine
-            model.write_text("from odoo.addons.other_module import helpers\n", encoding="utf-8")
-            self.assertNotIn("OCA004", self.codes(Linter().lint_file(model)))
-
-    def test_oca005_odoo_exception_warning(self):
-        self.assert_code("from odoo.exceptions import Warning\n", "OCA005")
-        self.assert_no_code("from odoo.exceptions import UserError\n", "OCA005")
-
-    def test_oca006_method_compute(self):
-        self.assert_code("name = fields.Char(compute='calc_name')\n", "OCA006")
-        self.assert_no_code("name = fields.Char(compute='_compute_name')\n", "OCA006")
-
-    def test_oca034_method_inverse(self):
-        self.assert_code("name = fields.Char(inverse='set_name')\n", "OCA034")
-        self.assert_no_code("name = fields.Char(inverse='_inverse_name')\n", "OCA034")
-
-    def test_oca035_method_search(self):
-        self.assert_code("name = fields.Char(search='find_name')\n", "OCA035")
-        self.assert_no_code("name = fields.Char(search='_search_name')\n", "OCA035")
-
-    def test_oca007_method_required_super(self):
+    def test_odo007_method_required_super(self):
         self.assert_code(
             "class MyModel(models.Model):\n    def create(self, vals):\n        return vals\n",
-            "OCA007",
+            "ODO007",
         )
         self.assert_no_code(
             "class MyModel(models.Model):\n    def create(self, vals):\n        return super().create(vals)\n",
-            "OCA007",
+            "ODO007",
         )
         # Plain functions (not methods) are fine
-        self.assert_no_code("def create(vals):\n    return vals\n", "OCA007")
+        self.assert_no_code("def create(vals):\n    return vals\n", "ODO007")
 
-    def test_oca008_translation_not_lazy(self):
-        self.assert_code("def m(self, name):\n    msg = _('Hello %s' % name)\n", "OCA008")
-        self.assert_code("def m(self, name):\n    msg = _('Hello %s') % name\n", "OCA008")
-        self.assert_code("def m(self, name):\n    msg = _lt('Hello %s') % name\n", "OCA008")
-        self.assert_no_code("def m(self, name):\n    msg = _('Hello %s', name)\n", "OCA008")
+    def test_odo008_translation_not_lazy(self):
+        self.assert_code("def m(self, name):\n    msg = _('Hello %s' % name)\n", "ODO008")
+        self.assert_code("def m(self, name):\n    msg = _('Hello %s') % name\n", "ODO008")
+        self.assert_code("def m(self, name):\n    msg = _lt('Hello %s') % name\n", "ODO008")
+        self.assert_no_code("def m(self, name):\n    msg = _('Hello %s', name)\n", "ODO008")
 
-    def test_oca023_translation_required(self):
+    def test_odo023_translation_required(self):
         self.assert_code(
             "def m(self):\n    raise UserError('String without translation')\n",
-            "OCA023",
+            "ODO023",
         )
         self.assert_code(
             "def m(self):\n    raise UserError(f'missing translation {self.x}')\n",
-            "OCA023",
+            "ODO023",
         )
         self.assert_code(
             "def m(self):\n    self.message_post(body='Untranslated body')\n",
-            "OCA023",
+            "ODO023",
         )
         self.assert_no_code(
             "def m(self):\n    raise UserError(_('Translated'))\n",
-            "OCA023",
+            "ODO023",
         )
         self.assert_no_code(
             "def m(self):\n    self.message_post(body=_('Translated'))\n",
-            "OCA023",
+            "ODO023",
         )
         # Non-Odoo exceptions are not required to be translated
         self.assert_no_code(
             "def m(self):\n    raise ZeroDivisionError('Not an Odoo exception')\n",
-            "OCA023",
+            "ODO023",
         )
 
-    def test_oca024_translation_contains_variable(self):
-        self.assert_code("def m(self, name):\n    msg = _('Hello %s' % name)\n", "OCA024")
-        self.assert_code("def m(self, name):\n    msg = _('Hello {}'.format(name))\n", "OCA024")
-        self.assert_no_code("def m(self, name):\n    msg = _('Hello %s') % name\n", "OCA024")
+    def test_odo024_translation_contains_variable(self):
+        self.assert_code("def m(self, name):\n    msg = _('Hello %s' % name)\n", "ODO024")
+        self.assert_code("def m(self, name):\n    msg = _('Hello {}'.format(name))\n", "ODO024")
+        self.assert_no_code("def m(self, name):\n    msg = _('Hello %s') % name\n", "ODO024")
 
-    def test_oca025_translation_positional_used(self):
-        self.assert_code("msg = _('%s %s')\n", "OCA025")
-        self.assert_code("def m(self, a, b):\n    msg = _('%s %s' % (a, b))\n", "OCA025")
-        self.assert_no_code("msg = _('%(a)s %(b)s')\n", "OCA025")
-        self.assert_no_code("msg = _('%s')\n", "OCA025")
+    def test_odo025_translation_positional_used(self):
+        self.assert_code("msg = _('%s %s')\n", "ODO025")
+        self.assert_code("def m(self, a, b):\n    msg = _('%s %s' % (a, b))\n", "ODO025")
+        self.assert_no_code("msg = _('%(a)s %(b)s')\n", "ODO025")
+        self.assert_no_code("msg = _('%s')\n", "ODO025")
 
-    def test_oca026_translation_field(self):
-        self.assert_code("name = fields.Char(string=_('Name'))\n", "OCA026")
-        self.assert_no_code("name = fields.Char(string='Name')\n", "OCA026")
+    def test_odo026_translation_field(self):
+        self.assert_code("name = fields.Char(string=_('Name'))\n", "ODO026")
+        self.assert_no_code("name = fields.Char(string='Name')\n", "ODO026")
 
-    def test_oca027_translation_format_interpolation(self):
-        self.assert_code("def m(self, name):\n    msg = _('Hello {}'.format(name))\n", "OCA027")
-        self.assert_code("def m(self, name):\n    msg = _('Hello {}').format(name)\n", "OCA027")
-        self.assert_no_code("def m(self, name):\n    msg = _('Hello %s', name)\n", "OCA027")
+    def test_odo027_translation_format_interpolation(self):
+        self.assert_code("def m(self, name):\n    msg = _('Hello {}'.format(name))\n", "ODO027")
+        self.assert_code("def m(self, name):\n    msg = _('Hello {}').format(name)\n", "ODO027")
+        self.assert_no_code("def m(self, name):\n    msg = _('Hello %s', name)\n", "ODO027")
 
-    def test_oca028_translation_fstring_interpolation(self):
-        self.assert_code("def m(self, name):\n    msg = _(f'Hello {name}')\n", "OCA028")
-        self.assert_no_code("def m(self, name):\n    msg = _('Hello %s', name)\n", "OCA028")
+    def test_odo028_translation_fstring_interpolation(self):
+        self.assert_code("def m(self, name):\n    msg = _(f'Hello {name}')\n", "ODO028")
+        self.assert_no_code("def m(self, name):\n    msg = _('Hello %s', name)\n", "ODO028")
 
-    def test_oca029_translation_format_truncated(self):
-        self.assert_code("msg = _('truncated %s%', 'a')\n", "OCA029")
-        self.assert_no_code("msg = _('fine %s', 'a')\n", "OCA029")
+    def test_odo029_translation_format_truncated(self):
+        self.assert_code("msg = _('truncated %s%', 'a')\n", "ODO029")
+        self.assert_no_code("msg = _('fine %s', 'a')\n", "ODO029")
 
-    def test_oca030_translation_too_few_args(self):
-        self.assert_code("msg = _('%s %s', 'a')\n", "OCA030")
-        self.assert_no_code("msg = _('%s %s', 'a', 'b')\n", "OCA030")
+    def test_odo030_translation_too_few_args(self):
+        self.assert_code("msg = _('%s %s', 'a')\n", "ODO030")
+        self.assert_no_code("msg = _('%s %s', 'a', 'b')\n", "ODO030")
 
-    def test_oca031_translation_too_many_args(self):
-        self.assert_code("msg = _('%s', 'a', 'b')\n", "OCA031")
-        self.assert_no_code("msg = _('%s %s', 'a', 'b')\n", "OCA031")
+    def test_odo031_translation_too_many_args(self):
+        self.assert_code("msg = _('%s', 'a', 'b')\n", "ODO031")
+        self.assert_no_code("msg = _('%s %s', 'a', 'b')\n", "ODO031")
 
-    def test_oca032_translation_unsupported_format(self):
-        self.assert_code("msg = _('bad %y placeholder', 'a')\n", "OCA032")
-        self.assert_no_code("msg = _('good %s placeholder', 'a')\n", "OCA032")
+    def test_odo032_translation_unsupported_format(self):
+        self.assert_code("msg = _('bad %y placeholder', 'a')\n", "ODO032")
+        self.assert_no_code("msg = _('good %s placeholder', 'a')\n", "ODO032")
 
-    def test_oca033_prefer_env_translation(self):
-        self.assert_code("def m(self):\n    return _('Hello')\n", "OCA033")
-        self.assert_no_code("def m(self):\n    return self.env._('Hello')\n", "OCA033")
+    def test_odo033_prefer_env_translation(self):
+        self.assert_code("def m(self):\n    return _('Hello')\n", "ODO033")
+        self.assert_no_code("def m(self):\n    return self.env._('Hello')\n", "ODO033")
         # Only relevant for Odoo >= 18.0
         config = Config(valid_odoo_versions=["16.0"])
-        self.assert_no_code("def m(self):\n    return _('Hello')\n", "OCA033", config=config)
+        self.assert_no_code("def m(self):\n    return _('Hello')\n", "ODO033", config=config)
+
+    def test_odo036_module_level_translation(self):
+        self.assert_code("LABEL = _('Label')\n", "ODO036")
+        self.assert_code("class M(models.Model):\n    name = fields.Char(string=_('Name'))\n", "ODO036")
+        # Default values and decorator arguments run at definition time too
+        self.assert_code("def m(self, label=_('Label')):\n    return label\n", "ODO036")
+        self.assert_no_code("def m(self):\n    return _('Label')\n", "ODO036")
+        self.assert_no_code("f = lambda self: _('Label')\n", "ODO036")
+        # LazyTranslate is the sanctioned module-level form
+        self.assert_no_code("_lt = LazyTranslate(__name__)\nLABEL = _lt('Label')\n", "ODO036")
+
+    def test_odo037_route_type_json(self):
+        bad = (
+            "class C(http.Controller):\n"
+            "    @http.route('/x', type='json', auth='user')\n"
+            "    def x(self):\n"
+            "        pass\n"
+        )
+        self.assert_code(bad, "ODO037")
+        self.assert_code(bad.replace("@http.route", "@route"), "ODO037")
+        self.assert_no_code(bad.replace("'json'", "'jsonrpc'"), "ODO037")
+        # type='json' is only deprecated from 19.0
+        self.assert_no_code(bad, "ODO037", config=Config(valid_odoo_versions=["18.0"]))
+
+    def test_odo038_non_ascii_punctuation(self):
+        self.assert_code("# totals \u2014 taxes may change\n", "ODO038")
+        self.assert_code('def m(self):\n    """Return the total \u2026"""\n', "ODO038")
+        self.assert_code("def m(self):\n    raise UserError(self.env._('Done \u2014 retry'))\n", "ODO038")
+        self.assert_code("def m(self):\n    raise UserError('It\u2019s gone')\n", "ODO038")
+        self.assert_no_code("# totals: taxes may change\n", "ODO038")
+        # Data, not prose: ordinary string literals are not checked
+        self.assert_no_code("SEPARATOR = ' \u2014 '\n", "ODO038")
+        diagnostics = self.lint_source("x = 1  # a \u2014 b \u2014 c\n")
+        self.assertEqual(self.codes(diagnostics), ["ODO038"])  # one diagnostic per comment
 
 
 class ManifestRulesTest(LintHelperMixin, unittest.TestCase):
@@ -449,115 +463,83 @@ class ManifestRulesTest(LintHelperMixin, unittest.TestCase):
     GOOD_MANIFEST = "{'name': 'My Module', 'version': '16.0.1.0.0', 'author': 'Skysize', 'license': 'AGPL-3'}\n"
 
     def test_good_manifest_is_clean(self):
-        diagnostics = self.lint_manifest(self.GOOD_MANIFEST, extra_files={"README.rst": "readme"})
-        self.assertEqual(self.codes(diagnostics), [])
+        self.assertEqual(self.codes(self.lint_manifest(self.GOOD_MANIFEST)), [])
+        # Odoo only requires `name`; no README, author or development_status needed
+        minimal = "{'name': 'My Module', 'description': 'Kept', 'maintainers': 'free form'}\n"
+        self.assertEqual(self.codes(self.lint_manifest(minimal)), [])
 
-    def test_oca009_manifest_required_key(self):
-        diagnostics = self.lint_manifest("{'name': 'My Module'}\n")
-        counts = self.codes(diagnostics).count("OCA009")
-        self.assertEqual(counts, 3)  # version, author, license missing
-        self.assertNotIn("OCA009", self.codes(self.lint_manifest(self.GOOD_MANIFEST)))
+    def test_odo009_manifest_required_key(self):
+        self.assertEqual(self.codes(self.lint_manifest("{'version': '1.0'}\n")), ["ODO009"])
+        self.assertNotIn("ODO009", self.codes(self.lint_manifest("{'name': 'My Module'}\n")))
 
-    def test_oca010_license_allowed(self):
+    def test_odo010_license_allowed(self):
         bad = "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'a', 'license': 'WTFPL'}\n"
-        self.assertIn("OCA010", self.codes(self.lint_manifest(bad)))
-        self.assertNotIn("OCA010", self.codes(self.lint_manifest(self.GOOD_MANIFEST)))
+        self.assertIn("ODO010", self.codes(self.lint_manifest(bad)))
+        self.assertNotIn("ODO010", self.codes(self.lint_manifest(self.GOOD_MANIFEST)))
+        self.assertNotIn("ODO010", self.codes(self.lint_manifest(bad.replace("WTFPL", "OPL-1"))))
 
-    def test_oca011_manifest_version_format(self):
-        bad = "{'name': 'x', 'version': '1.0', 'author': 'a', 'license': 'AGPL-3'}\n"
-        self.assertIn("OCA011", self.codes(self.lint_manifest(bad)))
-        self.assertNotIn("OCA011", self.codes(self.lint_manifest(self.GOOD_MANIFEST)))
+    def test_odo011_manifest_version_format(self):
+        for bad_version in ("1", "1.0.x", "v1.0", "19.0.1.0.0.0"):
+            bad = f"{{'name': 'x', 'version': '{bad_version}'}}\n"
+            self.assertIn("ODO011", self.codes(self.lint_manifest(bad)), bad_version)
+        for good_version in ("1.0", "1.2.3", "19.0.1.0", "19.0.1.0.0"):
+            good = f"{{'name': 'x', 'version': '{good_version}'}}\n"
+            self.assertNotIn("ODO011", self.codes(self.lint_manifest(good)), good_version)
 
-    def test_oca012_manifest_author_string(self):
+    def test_odo012_manifest_author_string(self):
         bad = "{'name': 'x', 'version': '16.0.1.0.0', 'author': ['a', 'b'], 'license': 'AGPL-3'}\n"
-        self.assertIn("OCA012", self.codes(self.lint_manifest(bad)))
-        self.assertNotIn("OCA012", self.codes(self.lint_manifest(self.GOOD_MANIFEST)))
+        self.assertIn("ODO012", self.codes(self.lint_manifest(bad)))
+        self.assertNotIn("ODO012", self.codes(self.lint_manifest(self.GOOD_MANIFEST)))
 
-    def test_oca013_manifest_required_author(self):
-        config = Config(manifest_required_authors=["Skysize"])
-        bad = "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'Someone Else', 'license': 'AGPL-3'}\n"
-        self.assertIn("OCA013", self.codes(self.lint_manifest(bad, config=config)))
-        good = "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'Skysize, Someone Else', 'license': 'AGPL-3'}\n"
-        self.assertNotIn("OCA013", self.codes(self.lint_manifest(good, config=config)))
-        # No required author configured by default
-        self.assertNotIn("OCA013", self.codes(self.lint_manifest(bad)))
-
-    def test_oca014_development_status_allowed(self):
-        bad = (
-            "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'a', 'license': 'AGPL-3',"
-            " 'development_status': 'InvalidStatus'}\n"
-        )
-        self.assertIn("OCA014", self.codes(self.lint_manifest(bad)))
-        good = bad.replace("InvalidStatus", "Beta")
-        self.assertNotIn("OCA014", self.codes(self.lint_manifest(good)))
-
-    def test_oca015_manifest_deprecated_key(self):
-        bad = (
-            "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'a', 'license': 'AGPL-3',"
-            " 'description': 'Use the README instead'}\n"
-        )
-        self.assertIn("OCA015", self.codes(self.lint_manifest(bad)))
-        self.assertNotIn("OCA015", self.codes(self.lint_manifest(self.GOOD_MANIFEST)))
-
-    def test_oca016_manifest_maintainers_list(self):
-        bad = (
-            "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'a', 'license': 'AGPL-3',"
-            " 'maintainers': 'single-string'}\n"
-        )
-        self.assertIn("OCA016", self.codes(self.lint_manifest(bad)))
-        good = bad.replace("'single-string'", "['someone']")
-        self.assertNotIn("OCA016", self.codes(self.lint_manifest(good)))
-
-    def test_oca017_manifest_data_duplicated(self):
+    def test_odo017_manifest_data_duplicated(self):
         bad = (
             "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'a', 'license': 'AGPL-3',"
             " 'data': ['views/a.xml', 'views/a.xml']}\n"
         )
         extra = {"views/a.xml": "<odoo/>"}
-        self.assertIn("OCA017", self.codes(self.lint_manifest(bad, extra_files=extra)))
+        self.assertIn("ODO017", self.codes(self.lint_manifest(bad, extra_files=extra)))
         good = "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'a', 'license': 'AGPL-3', 'data': ['views/a.xml']}\n"
-        self.assertNotIn("OCA017", self.codes(self.lint_manifest(good, extra_files=extra)))
+        self.assertNotIn("ODO017", self.codes(self.lint_manifest(good, extra_files=extra)))
 
-    def test_oca018_manifest_behind_migrations(self):
+    def test_odo018_manifest_behind_migrations(self):
         manifest = "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'a', 'license': 'AGPL-3'}\n"
         extra = {"migrations/16.0.2.0.0/pre-migration.py": "# migration"}
-        self.assertIn("OCA018", self.codes(self.lint_manifest(manifest, extra_files=extra)))
+        self.assertIn("ODO018", self.codes(self.lint_manifest(manifest, extra_files=extra)))
         extra_ok = {"migrations/16.0.1.0.0/pre-migration.py": "# migration"}
-        self.assertNotIn("OCA018", self.codes(self.lint_manifest(manifest, extra_files=extra_ok)))
+        self.assertNotIn("ODO018", self.codes(self.lint_manifest(manifest, extra_files=extra_ok)))
+        # Bare versions are prefixed with the series on both sides, like Odoo
+        bare = "{'name': 'x', 'version': '1.0'}\n"
+        self.assertIn("ODO018", self.codes(self.lint_manifest(bare, extra_files={"migrations/1.1/post.py": "#"})))
+        self.assertIn("ODO018", self.codes(self.lint_manifest(bare, extra_files={"migrations/19.0.1.1/post.py": "#"})))
+        self.assertNotIn("ODO018", self.codes(self.lint_manifest(bare, extra_files={"migrations/1.0/post.py": "#"})))
 
-    def test_oca019_manifest_external_assets(self):
+    def test_odo019_manifest_external_assets(self):
         bad = (
             "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'a', 'license': 'AGPL-3',"
             " 'assets': {'web.assets_backend': ['https://cdn.example.com/lib.js']}}\n"
         )
-        self.assertIn("OCA019", self.codes(self.lint_manifest(bad)))
+        self.assertIn("ODO019", self.codes(self.lint_manifest(bad)))
         good = (
             "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'a', 'license': 'AGPL-3',"
             " 'assets': {'web.assets_backend': ['my_module/static/src/js/lib.js']}}\n"
         )
         extra = {"static/src/js/lib.js": "// js"}
-        self.assertNotIn("OCA019", self.codes(self.lint_manifest(good, extra_files=extra)))
+        self.assertNotIn("ODO019", self.codes(self.lint_manifest(good, extra_files=extra)))
 
-    def test_oca020_missing_readme(self):
-        self.assertIn("OCA020", self.codes(self.lint_manifest(self.GOOD_MANIFEST)))
-        for readme in ("README.rst", "README.md", "README.txt"):
-            diagnostics = self.lint_manifest(self.GOOD_MANIFEST, extra_files={readme: "readme"})
-            self.assertNotIn("OCA020", self.codes(diagnostics))
-
-    def test_oca021_website_manifest_key_not_valid_uri(self):
+    def test_odo021_website_manifest_key_not_valid_uri(self):
         bad = "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'a', 'license': 'AGPL-3', 'website': 'not a url'}\n"
-        self.assertIn("OCA021", self.codes(self.lint_manifest(bad)))
+        self.assertIn("ODO021", self.codes(self.lint_manifest(bad)))
         good = bad.replace("'not a url'", "'https://www.skysize.io'")
-        self.assertNotIn("OCA021", self.codes(self.lint_manifest(good)))
+        self.assertNotIn("ODO021", self.codes(self.lint_manifest(good)))
 
-    def test_oca022_resource_not_exist(self):
+    def test_odo022_resource_not_exist(self):
         manifest = (
             "{'name': 'x', 'version': '16.0.1.0.0', 'author': 'a', 'license': 'AGPL-3',"
             " 'data': ['views/missing.xml']}\n"
         )
-        self.assertIn("OCA022", self.codes(self.lint_manifest(manifest)))
+        self.assertIn("ODO022", self.codes(self.lint_manifest(manifest)))
         extra = {"views/missing.xml": "<odoo/>"}
-        self.assertNotIn("OCA022", self.codes(self.lint_manifest(manifest, extra_files=extra)))
+        self.assertNotIn("ODO022", self.codes(self.lint_manifest(manifest, extra_files=extra)))
 
 
 if __name__ == "__main__":

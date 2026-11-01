@@ -48,7 +48,10 @@ def get_all_checkers(config: Config, filename: str, source_code: str) -> list[Ba
         ImportChecker,
         ManifestChecker,
         MethodChecker,
+        ModuleLevelTranslationChecker,
         PrintChecker,
+        PunctuationChecker,
+        RouteChecker,
         SQLInjectionChecker,
         TranslationChecker,
     )
@@ -60,6 +63,9 @@ def get_all_checkers(config: Config, filename: str, source_code: str) -> list[Ba
         ImportChecker,
         MethodChecker,
         TranslationChecker,
+        ModuleLevelTranslationChecker,
+        RouteChecker,
+        PunctuationChecker,
     ]
 
     # Add manifest checker if this is a manifest file

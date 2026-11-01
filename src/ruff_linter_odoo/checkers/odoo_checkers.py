@@ -1,14 +1,19 @@
 """Odoo-specific linting checks.
 
-Rule codes are sequential (OCA001, OCA002, ...) and intentionally do NOT
-mirror upstream pylint-odoo message ids: upstream ids are only unique
-together with their letter prefix (C8101 and E8101 are different rules),
-so a plain numeric mapping would be ambiguous. The README documents the
-mapping from each OCA0xx code to its upstream pylint-odoo name/id.
+The rules follow the official Odoo coding guidelines, not the OCA ones:
+OCA-only conventions (relative imports, required author, README template,
+development_status, maintainers, series-prefixed versions) are not checked.
+
+Rule codes (ODO001, ODO002, ...) are stable: a removed rule leaves a gap,
+it is never renumbered. Codes ported from pylint-odoo do not mirror its
+message ids (C8101 and E8101 are different rules there, so a plain numeric
+mapping would be ambiguous); the README documents the mapping.
 """
 
 import ast
+import io
 import re
+import tokenize
 from collections import Counter
 from pathlib import Path
 from typing import Any, Optional
@@ -22,9 +27,6 @@ TRANSLATION_METHODS = ("_", "_lt")
 
 #: Manifest keys holding lists of data file paths.
 MANIFEST_DATA_KEYS = ["data", "demo", "demo_xml", "init_xml", "test", "update_xml"]
-
-#: Recognized Odoo manifest file names.
-MANIFEST_FILES = ("__manifest__.py", "__odoo__.py", "__openerp__.py", "__terp__.py")
 
 #: Cursor expressions whose commit()/execute() usage is checked.
 CURSOR_EXPRESSIONS = (
@@ -48,8 +50,21 @@ METHOD_REQUIRED_SUPER = (
     "write",
 )
 
-#: Accepted README file names next to the manifest.
-README_FILES = ["README.rst", "README.md", "README.txt"]
+#: Official Odoo coding guidelines, linked from rule messages.
+GUIDELINES_URL = "https://www.odoo.com/documentation/19.0/contributing/development/coding_guidelines.html"
+
+#: Non-ASCII punctuation and its ASCII replacement (Odoo guidelines: plain
+#: ASCII punctuation in comments, docstrings and user-facing strings).
+NON_ASCII_PUNCTUATION = {
+    "\u2014": "a comma, colon, semicolon or parentheses",  # em dash
+    "\u2013": "-",  # en dash
+    "\u201c": '"',
+    "\u201d": '"',
+    "\u2018": "'",
+    "\u2019": "'",
+    "\u2026": "...",
+}
+NON_ASCII_PUNCTUATION_RE = re.compile("[" + "".join(NON_ASCII_PUNCTUATION) + "]")
 
 # Based on https://github.com/python-validators/validators domain regex,
 # same as upstream pylint-odoo misc.py
@@ -216,6 +231,33 @@ def version2tuple(version: str) -> tuple[int, ...]:
     return tuple(int(part) for part in version.split("."))
 
 
+def newest_odoo_version(config) -> Optional[str]:
+    """Newest configured Odoo series ('19.0'), None if none parses."""
+    versions = []
+    for version in config.valid_odoo_versions:
+        try:
+            versions.append((version2tuple(str(version)), str(version)))
+        except ValueError:
+            continue
+    return max(versions)[1] if versions else None
+
+
+def odoo_version_at_least(config, minimum: tuple[int, int]) -> bool:
+    """True when the newest configured Odoo version is >= minimum."""
+    newest = newest_odoo_version(config)
+    return newest is None or version2tuple(newest) >= minimum
+
+
+def full_module_version(version: str, series: str) -> str:
+    """Prefix a module version with the series, like odoo.modules.adapt_version.
+
+    '1.0' -> '19.0.1.0'; '19.0.1.0' stays as is.
+    """
+    if version == series or not version.startswith(series + "."):
+        return f"{series}.{version}"
+    return version
+
+
 class PrintChecker(BaseChecker):
     """Check for print statements (should use logger instead)."""
 
@@ -223,7 +265,7 @@ class PrintChecker(BaseChecker):
         """Check for print() calls."""
         if isinstance(node.func, ast.Name) and node.func.id == "print":
             self.add_diagnostic(
-                "OCA001",
+                "ODO001",
                 "Print used. Use `logger` instead.",
                 node,
                 DiagnosticLevel.WARNING,
@@ -242,9 +284,8 @@ class CommitChecker(BaseChecker):
             and get_dotted_name(node.func.value) in CURSOR_EXPRESSIONS
         ):
             self.add_diagnostic(
-                "OCA002",
-                "Use of cr.commit() directly - "
-                "More info https://github.com/OCA/odoo-community.org/blob/master/website/Contribution/CONTRIBUTING.rst#never-commit-the-transaction",
+                "ODO002",
+                f"Use of cr.commit() directly - More info {GUIDELINES_URL}#never-commit-the-transaction",
                 node,
                 DiagnosticLevel.ERROR,
             )
@@ -289,9 +330,8 @@ class SQLInjectionChecker(BaseChecker):
         """Check for execute()/executemany() calls with risky formatting."""
         if self._is_sql_injection_risky(node):
             self.add_diagnostic(
-                "OCA003",
-                "SQL injection risk. Use parameters if you can. - "
-                "More info https://github.com/OCA/odoo-community.org/blob/master/website/Contribution/CONTRIBUTING.rst#no-sql-injection",
+                "ODO003",
+                f"SQL injection risk. Use parameters if you can. - More info {GUIDELINES_URL}#no-sql-injection",
                 node,
                 DiagnosticLevel.ERROR,
             )
@@ -395,71 +435,19 @@ class SQLInjectionChecker(BaseChecker):
 class ImportChecker(BaseChecker):
     """Check for Odoo-specific import issues."""
 
-    def visit_Import(self, node: ast.Import):
-        """Check `import odoo.addons.module` style imports."""
-        imported = set()
-        for alias in node.names:
-            parts = alias.name.split(".")
-            if len(parts) >= 3 and parts[0] == "odoo" and parts[1] == "addons":
-                imported.add(parts[2])
-        self._check_same_module_import(node, imported)
-        self.generic_visit(node)
-
     def visit_ImportFrom(self, node: ast.ImportFrom):
-        """Check imports."""
-        if node.module:
-            # Check for odoo.addons absolute imports of the same module
-            imported = set()
-            parts = node.module.split(".")
-            if parts[:2] == ["odoo", "addons"]:
-                if len(parts) >= 3:
-                    # from odoo.addons.module import models
-                    imported.add(parts[2])
-                else:
-                    # from odoo.addons import module
-                    imported.update(alias.name for alias in node.names)
-            self._check_same_module_import(node, imported)
-
-            # Check for deprecated Warning import
-            if node.module == "odoo.exceptions":
-                for alias in node.names:
-                    if alias.name == "Warning":
-                        self.add_diagnostic(
-                            "OCA005",
-                            "`odoo.exceptions.Warning` is a deprecated alias to `odoo.exceptions.UserError` "
-                            "use `from odoo.exceptions import UserError`",
-                            node,
-                            DiagnosticLevel.REFACTOR,
-                        )
-
+        """Check for the deprecated odoo.exceptions.Warning import."""
+        if node.module == "odoo.exceptions":
+            for alias in node.names:
+                if alias.name == "Warning":
+                    self.add_diagnostic(
+                        "ODO005",
+                        "`odoo.exceptions.Warning` is a deprecated alias to `odoo.exceptions.UserError` "
+                        "use `from odoo.exceptions import UserError`",
+                        node,
+                        DiagnosticLevel.REFACTOR,
+                    )
         self.generic_visit(node)
-
-    def _check_same_module_import(self, node: ast.AST, imported_modules: set[str]):
-        if not imported_modules:
-            return
-        module_name = self._odoo_module_name()
-        if module_name and module_name in imported_modules:
-            self.add_diagnostic(
-                "OCA004",
-                f'Same Odoo module absolute import. You should use relative import with "." '
-                f'instead of "odoo.addons.{module_name}"',
-                node,
-                DiagnosticLevel.WARNING,
-            )
-
-    def _odoo_module_name(self) -> str:
-        """Name of the Odoo module containing this file ('' if none applies)."""
-        file_dir = Path(self.filename).resolve().parent
-        # Migration scripts legitimately import their own module absolutely
-        if file_dir.parent.name == "migrations":
-            return ""
-        # Test files are only loaded when the module is installed
-        if file_dir.name == "tests":
-            return ""
-        for parent in [file_dir, *file_dir.parents]:
-            if any((parent / manifest).is_file() for manifest in MANIFEST_FILES):
-                return parent.name
-        return ""
 
 
 class MethodChecker(BaseChecker):
@@ -467,9 +455,9 @@ class MethodChecker(BaseChecker):
 
     #: field keyword -> (code, expected method name prefix)
     FIELD_METHOD_KEYWORDS = {
-        "compute": ("OCA006", "_compute_"),
-        "inverse": ("OCA034", "_inverse_"),
-        "search": ("OCA035", "_search_"),
+        "compute": ("ODO006", "_compute_"),
+        "inverse": ("ODO034", "_inverse_"),
+        "search": ("ODO035", "_search_"),
     }
 
     def visit_ClassDef(self, node: ast.ClassDef):
@@ -504,7 +492,7 @@ class MethodChecker(BaseChecker):
             if isinstance(child, ast.Call) and isinstance(child.func, ast.Name) and child.func.id == "super":
                 return
         self.add_diagnostic(
-            "OCA007",
+            "ODO007",
             f'Missing `super` call in "{node.name}" method.',
             node,
             DiagnosticLevel.WARNING,
@@ -526,7 +514,7 @@ class TranslationChecker(BaseChecker):
             and get_func_name(node.func.value.func) in TRANSLATION_METHODS
         ):
             self.add_diagnostic(
-                "OCA027",
+                "ODO027",
                 "Use of str.format() on the result of odoo._. "
                 'Pass the values as arguments to _() instead, e.g. `_("Total: %s", value)`',
                 node,
@@ -553,7 +541,7 @@ class TranslationChecker(BaseChecker):
             for argument in list(node.args) + [kw.value for kw in node.keywords]:
                 if isinstance(argument, ast.Call) and get_func_name(argument.func) in TRANSLATION_METHODS:
                     self.add_diagnostic(
-                        "OCA026",
+                        "ODO026",
                         'Translation method _("string") in fields is not necessary.',
                         argument,
                         DiagnosticLevel.WARNING,
@@ -570,7 +558,7 @@ class TranslationChecker(BaseChecker):
             and self._odoo_version_at_least((14, 0))
         ):
             self.add_diagnostic(
-                "OCA008",
+                "ODO008",
                 "Use of % interpolation on the result of odoo._. "
                 'Pass the values as arguments to _() instead, e.g. `_("Total: %s", value)`',
                 node,
@@ -624,7 +612,7 @@ class TranslationChecker(BaseChecker):
                 keyword_prefix = f"{keyword}=" if keyword else ""
                 tl_method = "self.env._" if self._odoo_version_at_least((18, 0)) else "_"
                 self.add_diagnostic(
-                    "OCA023",
+                    "ODO023",
                     f'String parameter on "message_post" requires translation. '
                     f"Use {keyword_prefix}{tl_method}({as_string})",
                     node,
@@ -648,7 +636,7 @@ class TranslationChecker(BaseChecker):
                 exc_name = get_func_name(expr.func)
                 tl_method = "self.env._" if self._odoo_version_at_least((18, 0)) else "_"
                 self.add_diagnostic(
-                    "OCA023",
+                    "ODO023",
                     f'String parameter on "{exc_name}" requires translation. Use {tl_method}({ast.unparse(argument)})',
                     node,
                     DiagnosticLevel.CONVENTION,
@@ -656,23 +644,14 @@ class TranslationChecker(BaseChecker):
         self.generic_visit(node)
 
     def _odoo_version_at_least(self, minimum: tuple[int, int]) -> bool:
-        """True when the newest configured Odoo version is >= minimum."""
-        versions = []
-        for version in self.config.valid_odoo_versions:
-            try:
-                versions.append(version2tuple(str(version)))
-            except ValueError:
-                continue
-        if not versions:
-            return True
-        return max(versions) >= minimum
+        return odoo_version_at_least(self.config, minimum)
 
     def _check_translation_call(self, node: ast.Call):
         """Run all checks on a _(...) / _lt(...) call."""
         # prefer-env-translation (Odoo >= 18 only): bare _() instead of self.env._()
         if isinstance(node.func, ast.Name) and self._odoo_version_at_least((18, 0)):
             self.add_diagnostic(
-                "OCA033",
+                "ODO033",
                 "Better using self.env._ More info at https://github.com/odoo/odoo/pull/174844",
                 node,
                 DiagnosticLevel.WARNING,
@@ -683,7 +662,7 @@ class TranslationChecker(BaseChecker):
         # translation-fstring-interpolation: _(f"...")
         if isinstance(arg, ast.JoinedStr):
             self.add_diagnostic(
-                "OCA028",
+                "ODO028",
                 "Use of f-string inside odoo._. The translation lookup happens on the "
                 "interpolated string and will fail; pass the values as arguments to _() instead.",
                 node,
@@ -694,7 +673,7 @@ class TranslationChecker(BaseChecker):
         if isinstance(arg, ast.BinOp) and isinstance(arg.op, ast.Mod):
             if self._odoo_version_at_least((14, 0)):
                 self.add_diagnostic(
-                    "OCA008",
+                    "ODO008",
                     "Use of % interpolation inside odoo._. "
                     'Pass the values as arguments to _() instead, e.g. `_("Total: %s", value)`',
                     node,
@@ -703,7 +682,7 @@ class TranslationChecker(BaseChecker):
             wrong = f"{ast.unparse(arg.left)} % {ast.unparse(arg.right)}"
             right = f"_({ast.unparse(arg.left)}) % {ast.unparse(arg.right)}"
             self.add_diagnostic(
-                "OCA024",
+                "ODO024",
                 f'Translatable term in "{wrong}" contains variables. Use {right} instead',
                 node,
                 DiagnosticLevel.WARNING,
@@ -716,7 +695,7 @@ class TranslationChecker(BaseChecker):
             and isinstance(arg.func.value, ast.Constant)
         ):
             self.add_diagnostic(
-                "OCA027",
+                "ODO027",
                 "Use of str.format() inside odoo._. "
                 'Pass the values as arguments to _() instead, e.g. `_("Total: %s", value)`',
                 node,
@@ -728,7 +707,7 @@ class TranslationChecker(BaseChecker):
             wrong = ast.unparse(arg)
             right = f"_({ast.unparse(arg.func.value)}).format({params})"
             self.add_diagnostic(
-                "OCA024",
+                "ODO024",
                 f'Translatable term in "{wrong}" contains variables. Use {right} instead',
                 node,
                 DiagnosticLevel.WARNING,
@@ -748,7 +727,7 @@ class TranslationChecker(BaseChecker):
         format_count = count_format_placeholders(str2translate)
         if positional_count >= 2 or format_count >= 2:
             self.add_diagnostic(
-                "OCA025",
+                "ODO025",
                 f"Translation method _({str2translate!r}) is using positional string printf formatting with "
                 'multiple arguments. Use named placeholder `_("%(placeholder)s")` instead.',
                 node,
@@ -769,14 +748,14 @@ class TranslationChecker(BaseChecker):
             kind, char = printf_error
             if kind == "truncated":
                 self.add_diagnostic(
-                    "OCA029",
+                    "ODO029",
                     "odoo._ format string ends in middle of conversion specifier",
                     node,
                     DiagnosticLevel.ERROR,
                 )
             else:
                 self.add_diagnostic(
-                    "OCA032",
+                    "ODO032",
                     f"Unsupported odoo._ format character {char!r} in format string {fmt!r}",
                     node,
                     DiagnosticLevel.ERROR,
@@ -787,14 +766,14 @@ class TranslationChecker(BaseChecker):
             return
         if supplied_args > printf_count:
             self.add_diagnostic(
-                "OCA031",
+                "ODO031",
                 "Too many arguments for odoo._ format string",
                 node,
                 DiagnosticLevel.ERROR,
             )
         elif supplied_args < printf_count:
             self.add_diagnostic(
-                "OCA030",
+                "ODO030",
                 "Not enough arguments for odoo._ format string",
                 node,
                 DiagnosticLevel.ERROR,
@@ -819,16 +798,12 @@ class ManifestChecker(BaseChecker):
                 self._value_nodes[key.value] = value
 
         self._check_required_keys(manifest_dict, node)
-        self._check_deprecated_keys(manifest_dict, node)
         self._check_license(manifest_dict, node)
         self._check_version_format(manifest_dict, node)
         self._check_author(manifest_dict, node)
-        self._check_development_status(manifest_dict, node)
-        self._check_maintainers(manifest_dict, node)
         self._check_data_files(manifest_dict, node)
         self._check_behind_migrations(manifest_dict, node)
         self._check_external_assets(manifest_dict, node)
-        self._check_missing_readme(manifest_dict, node)
         self._check_website(manifest_dict, node)
 
         self.generic_visit(node)
@@ -880,20 +855,9 @@ class ManifestChecker(BaseChecker):
         for key in self.config.manifest_required_keys:
             if key not in manifest:
                 self.add_diagnostic(
-                    "OCA009",
+                    "ODO009",
                     f'Missing required key "{key}" in manifest file',
                     node,
-                    DiagnosticLevel.CONVENTION,
-                )
-
-    def _check_deprecated_keys(self, manifest: dict[str, Any], node: ast.AST):
-        """Check for deprecated manifest keys."""
-        for key in self.config.manifest_deprecated_keys:
-            if key in manifest:
-                self.add_diagnostic(
-                    "OCA015",
-                    f'Deprecated key "{key}" in manifest file',
-                    self._key_node(key, node),
                     DiagnosticLevel.CONVENTION,
                 )
 
@@ -902,21 +866,25 @@ class ManifestChecker(BaseChecker):
         license_value = manifest.get("license")
         if license_value and license_value not in self.config.license_allowed:
             self.add_diagnostic(
-                "OCA010",
+                "ODO010",
                 f'License "{license_value}" not allowed in manifest file.',
                 self._key_node("license", node),
                 DiagnosticLevel.CONVENTION,
             )
 
     def _check_version_format(self, manifest: dict[str, Any], node: ast.AST):
-        """Check version format against the configured valid Odoo versions."""
+        """Check the version is x.y[.z], optionally prefixed by a valid Odoo series.
+
+        Odoo prefixes a bare version with the running series at load time
+        (odoo.modules.adapt_version), so '1.0' and '19.0.1.0' are both valid.
+        """
         version = manifest.get("version")
         if version:
             valid_versions = "|".join(re.escape(str(v)) for v in self.config.valid_odoo_versions)
-            pattern = rf"^({valid_versions})\.\d+\.\d+\.\d+$"
+            pattern = rf"^(({valid_versions})\.)?\d+\.\d+(\.\d+)?$"
             if not re.match(pattern, str(version)):
                 self.add_diagnostic(
-                    "OCA011",
+                    "ODO011",
                     f'Wrong Version Format "{version}" in manifest file. Regex to match: "{pattern}"',
                     self._key_node("version", node),
                     DiagnosticLevel.CONVENTION,
@@ -925,52 +893,11 @@ class ManifestChecker(BaseChecker):
     def _check_author(self, manifest: dict[str, Any], node: ast.AST):
         """Check author field."""
         author = manifest.get("author")
-
-        # Check if author is a string
         if author and not isinstance(author, str):
             self.add_diagnostic(
-                "OCA012",
+                "ODO012",
                 "The author key in the manifest file must be a string (with comma separated values)",
                 self._key_node("author", node),
-                DiagnosticLevel.ERROR,
-            )
-            return
-
-        # Check if one of the required authors is present
-        if author and self.config.manifest_required_authors:
-            authors = {part.strip() for part in author.split(",")}
-            required_authors = set(self.config.manifest_required_authors)
-            if not authors & required_authors:
-                authors_list = ", ".join(sorted(required_authors))
-                self.add_diagnostic(
-                    "OCA013",
-                    f"One of the following authors must be present in manifest: {authors_list}",
-                    self._key_node("author", node),
-                    DiagnosticLevel.CONVENTION,
-                )
-
-    def _check_development_status(self, manifest: dict[str, Any], node: ast.AST):
-        """Check development_status field."""
-        dev_status = manifest.get("development_status")
-        if dev_status and dev_status not in self.config.development_status_allowed:
-            allowed_statuses = ", ".join(self.config.development_status_allowed)
-            self.add_diagnostic(
-                "OCA014",
-                f'Manifest key development_status "{dev_status}" not allowed. Use one of: {allowed_statuses}.',
-                self._key_node("development_status", node),
-                DiagnosticLevel.CONVENTION,
-            )
-
-    def _check_maintainers(self, manifest: dict[str, Any], node: ast.AST):
-        """Check maintainers key is a list of strings."""
-        maintainers = manifest.get("maintainers")
-        if maintainers and (
-            not isinstance(maintainers, list) or any(not isinstance(item, str) for item in maintainers)
-        ):
-            self.add_diagnostic(
-                "OCA016",
-                "The maintainers key in the manifest file must be a list of strings",
-                self._key_node("maintainers", node),
                 DiagnosticLevel.ERROR,
             )
 
@@ -993,14 +920,14 @@ class ManifestChecker(BaseChecker):
                 if coincidences >= 2:
                     lines_str = ", ".join(str(getattr(n, "lineno", "?")) for n in nodes_for_resource[1:])
                     self.add_diagnostic(
-                        "OCA017",
+                        "ODO017",
                         f'The file "{resource}" is duplicated in lines {lines_str} from manifest key "{key}"',
                         first_node,
                         DiagnosticLevel.WARNING,
                     )
                 if not (module_dir / resource).is_file():
                     self.add_diagnostic(
-                        "OCA022",
+                        "ODO022",
                         f'File "{key}": "{resource}" not found.',
                         first_node,
                         DiagnosticLevel.ERROR,
@@ -1009,25 +936,27 @@ class ManifestChecker(BaseChecker):
     def _check_behind_migrations(self, manifest: dict[str, Any], node: ast.AST):
         """Check the manifest version is not behind the migration scripts."""
         version = manifest.get("version")
-        if not version:
+        series = newest_odoo_version(self.config)
+        if not version or not series:
             return
         migrations_dir = self._module_dir() / "migrations"
         if not migrations_dir.is_dir():
             return
+        # Compare like Odoo does: both sides prefixed with the series
         try:
-            version_tuple = version2tuple(str(version))
+            version_tuple = version2tuple(full_module_version(str(version), series))
         except ValueError:
             return
         for migration_path in sorted(migrations_dir.iterdir(), reverse=True):
             if not migration_path.is_dir():
                 continue
             try:
-                migration_tuple = version2tuple(migration_path.name)
+                migration_tuple = version2tuple(full_module_version(migration_path.name, series))
             except ValueError:
                 continue
             if migration_tuple > version_tuple:
                 self.add_diagnostic(
-                    "OCA018",
+                    "ODO018",
                     f"Manifest version ({version}) is lower than migration scripts ({migration_path.name})",
                     self._key_node("version", node),
                     DiagnosticLevel.ERROR,
@@ -1047,7 +976,7 @@ class ManifestChecker(BaseChecker):
             for element in getattr(bundle_value, "elts", []):
                 if isinstance(element, ast.Constant) and is_external_url(element.value):
                     self.add_diagnostic(
-                        "OCA019",
+                        "ODO019",
                         f"Asset {element.value} should be distributed with module's source code. "
                         "More info at https://httptoolkit.com/blog/public-cdn-risks/",
                         element,
@@ -1057,23 +986,12 @@ class ManifestChecker(BaseChecker):
                     for entry in element.elts:
                         if isinstance(entry, ast.Constant) and is_external_url(entry.value):
                             self.add_diagnostic(
-                                "OCA019",
+                                "ODO019",
                                 f"Asset {entry.value} should be distributed with module's source code. "
                                 "More info at https://httptoolkit.com/blog/public-cdn-risks/",
                                 element,
                                 DiagnosticLevel.WARNING,
                             )
-
-    def _check_missing_readme(self, manifest: dict[str, Any], node: ast.AST):
-        """Check a README file exists next to the manifest."""
-        module_dir = self._module_dir()
-        if not any((module_dir / readme).is_file() for readme in README_FILES):
-            self.add_diagnostic(
-                "OCA020",
-                f"Missing ./README.rst file. Template here: {self.config.readme_template_url}",
-                node,
-                DiagnosticLevel.CONVENTION,
-            )
 
     def _check_website(self, manifest: dict[str, Any], node: ast.AST):
         """Check the website key is a valid URI."""
@@ -1088,8 +1006,126 @@ class ManifestChecker(BaseChecker):
             msg = str(url_exc)
         if website and not url_is_valid:
             self.add_diagnostic(
-                "OCA021",
+                "ODO021",
                 f'Website "{website}" in manifest key is not a valid URI. {msg}',
                 self._key_node("website", node),
                 DiagnosticLevel.WARNING,
             )
+
+
+class ModuleLevelTranslationChecker(BaseChecker):
+    """Check _() is not called at module or class level (runs at import time)."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._function_depth = 0
+
+    def visit_FunctionDef(self, node: ast.FunctionDef):
+        # Decorators and default values are evaluated at definition time
+        for child in [*node.decorator_list, *node.args.defaults, *node.args.kw_defaults]:
+            if child is not None:
+                self.visit(child)
+        self._function_depth += 1
+        for child in node.body:
+            self.visit(child)
+        self._function_depth -= 1
+
+    visit_AsyncFunctionDef = visit_FunctionDef  # noqa: N815 - ast.NodeVisitor naming
+
+    def visit_Lambda(self, node: ast.Lambda):
+        self._function_depth += 1
+        self.generic_visit(node)
+        self._function_depth -= 1
+
+    def visit_Call(self, node: ast.Call):
+        if not self._function_depth and isinstance(node.func, ast.Name) and node.func.id == "_":
+            self.add_diagnostic(
+                "ODO036",
+                "_() called at module or class level runs at import time, without the user's language. "
+                'Translate inside the method, or use `_lt = LazyTranslate(__name__)` and `_lt("...")`.',
+                node,
+                DiagnosticLevel.WARNING,
+            )
+        self.generic_visit(node)
+
+
+class RouteChecker(BaseChecker):
+    """Check controller route declarations."""
+
+    def visit_FunctionDef(self, node: ast.FunctionDef):
+        for decorator in node.decorator_list:
+            if not (isinstance(decorator, ast.Call) and get_func_name(decorator.func) == "route"):
+                continue
+            for keyword in decorator.keywords:
+                if (
+                    keyword.arg == "type"
+                    and get_str_value(keyword.value) == "json"
+                    and odoo_version_at_least(self.config, (19, 0))
+                ):
+                    self.add_diagnostic(
+                        "ODO037",
+                        "type='json' is a deprecated alias of type='jsonrpc' since Odoo 19.0.",
+                        keyword.value,
+                        DiagnosticLevel.WARNING,
+                    )
+        self.generic_visit(node)
+
+    visit_AsyncFunctionDef = visit_FunctionDef  # noqa: N815 - ast.NodeVisitor naming
+
+
+class PunctuationChecker(BaseChecker):
+    """Check comments, docstrings and user-facing strings use ASCII punctuation."""
+
+    def visit_Module(self, node: ast.Module):
+        try:
+            tokens = list(tokenize.generate_tokens(io.StringIO(self.source_code).readline))
+        except (tokenize.TokenError, SyntaxError):
+            tokens = []
+        for token in tokens:
+            if token.type == tokenize.COMMENT:
+                self._check_text(token.string, token.start[0], token.start[1])
+        self._check_docstring(node)
+        self.generic_visit(node)
+
+    def visit_ClassDef(self, node: ast.ClassDef):
+        self._check_docstring(node)
+        self.generic_visit(node)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef):
+        self._check_docstring(node)
+        self.generic_visit(node)
+
+    visit_AsyncFunctionDef = visit_FunctionDef  # noqa: N815 - ast.NodeVisitor naming
+
+    def visit_Call(self, node: ast.Call):
+        """Translated terms and Odoo exception messages are user-facing."""
+        func_name = get_func_name(node.func)
+        if node.args and (func_name in TRANSLATION_METHODS or func_name in self.config.odoo_exceptions):
+            argument = node.args[0]
+            text = get_str_value(argument)
+            if text is not None:
+                self._check_text(text, argument.lineno, argument.col_offset)
+        self.generic_visit(node)
+
+    def _check_docstring(self, node: ast.AST):
+        body = getattr(node, "body", None)
+        if (
+            body
+            and isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)
+        ):
+            self._check_text(body[0].value.value, body[0].lineno, body[0].col_offset)
+
+    def _check_text(self, text: str, line: int, column: int):
+        found = sorted(set(NON_ASCII_PUNCTUATION_RE.findall(text)))
+        if not found:
+            return
+        hints = "; ".join(f"{char!r} -> {NON_ASCII_PUNCTUATION[char]}" for char in found)
+        location = ast.Constant(value=None, lineno=line, col_offset=column)
+        self.add_diagnostic(
+            "ODO038",
+            f"Use plain ASCII punctuation in comments, docstrings and user-facing strings: {hints}",
+            location,
+            DiagnosticLevel.CONVENTION,
+        )

@@ -30,8 +30,6 @@ DEFAULT_VALID_ODOO_VERSIONS = [
     "19.0",
 ]
 
-DEFAULT_README_TEMPLATE_URL = "https://github.com/OCA/maintainer-tools/blob/master/template/module/README.rst"
-
 # Exception classes from odoo/exceptions.py whose messages must be translated
 DEFAULT_ODOO_EXCEPTIONS = [
     "AccessDenied",
@@ -60,11 +58,9 @@ class Config:
     enable: list[str] = field(default_factory=list)
     disable: list[str] = field(default_factory=list)
 
-    # Manifest checks
-    manifest_required_keys: list[str] = field(default_factory=lambda: ["name", "version", "author", "license"])
-    manifest_deprecated_keys: list[str] = field(default_factory=lambda: ["description"])
-    manifest_required_authors: list[str] = field(default_factory=list)
-    readme_template_url: str = DEFAULT_README_TEMPLATE_URL
+    # Manifest checks: Odoo only requires `name` (license defaults to LGPL-3)
+    manifest_required_keys: list[str] = field(default_factory=lambda: ["name"])
+    # Values accepted by ir.module.module's license selection
     license_allowed: list[str] = field(
         default_factory=lambda: [
             "AGPL-3",
@@ -74,14 +70,11 @@ class Config:
             "GPL-3",
             "GPL-3 or any later version",
             "OEEL-1",
+            "OPL-1",
             "Other OSI approved licence",
             "Other proprietary",
         ]
     )
-    development_status_allowed: list[str] = field(
-        default_factory=lambda: ["Alpha", "Beta", "Production/Stable", "Mature"]
-    )
-
     # Translation checks
     odoo_exceptions: list[str] = field(default_factory=lambda: list(DEFAULT_ODOO_EXCEPTIONS))
 
@@ -122,13 +115,7 @@ class Config:
             enable=tool_config.get("enable", default.enable),
             disable=tool_config.get("disable", default.disable),
             manifest_required_keys=tool_config.get("manifest-required-keys", default.manifest_required_keys),
-            manifest_deprecated_keys=tool_config.get("manifest-deprecated-keys", default.manifest_deprecated_keys),
-            manifest_required_authors=tool_config.get("manifest-required-authors", default.manifest_required_authors),
-            readme_template_url=tool_config.get("readme-template-url", default.readme_template_url),
             license_allowed=tool_config.get("license-allowed", default.license_allowed),
-            development_status_allowed=tool_config.get(
-                "development-status-allowed", default.development_status_allowed
-            ),
             odoo_exceptions=tool_config.get("odoo-exceptions", default.odoo_exceptions),
             exclude=tool_config.get("exclude", default.exclude),
         )
